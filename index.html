@@ -168,7 +168,7 @@
   const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; // Salin dari Project Settings -> API
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA'; // Salin 'anon' key dari halaman yang sama
 
-  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let allData = [];
 
   // Senarai PIC (Dikunci/Hardcode mengikut permintaan rasmi PPD Subis)
