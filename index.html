@@ -57,7 +57,6 @@
     .pic-list { margin: 0; padding-left: 1.2rem; font-weight: 600; }
     .pic-list li { padding-bottom: 4px; line-height: 1.2; }
     
-    /* STREAMING_CHUNK: Menetapkan animasi pemuat *(loader)* untuk petunjuk data... */
     .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-red); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
@@ -68,7 +67,6 @@
   <div class="brand-header text-center">
     <h2 class="fw-bold m-0 text-uppercase tracking-wide">Takwim SPBM 2026</h2>
     <span class="opacity-75 d-block mt-1 fw-medium letter-spacing-1">PEJABAT PENDIDIKAN DAERAH SUBIS</span>
-    <!-- Link Google Form diletakkan di sini -->
     <a href="https://docs.google.com/forms/d/e/1FAIpQLSf_vLeR_u8O3IhGdQHpjfBGEzQTwq6uEykapjZIiTKNvGM4ig/viewform" target="_blank" class="btn-add">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
       TAMBAH PROGRAM BARU
@@ -142,7 +140,7 @@
     <div class="p-3 bg-light d-flex justify-content-between align-items-center border-bottom">
       <div class="d-flex align-items-center">
         <div id="loader" class="loader me-3"></div>
-        <span class="fw-bold text-muted small" id="statLabel">Memproses Data dari Supabase...</span>
+        <span class="fw-bold text-muted small" id="statLabel">Menghubungi Sistem...</span>
       </div>
     </div>
     <div class="table-responsive">
@@ -164,14 +162,9 @@
 </div>
 
 <script>
-  // ⚠️ PENTING: TUKAR URL DAN KEY INI DENGAN MAKLUMAT SUPABASE ANDA
-  const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; // Salin dari Project Settings -> API
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA'; // Salin 'anon' key dari halaman yang sama
-
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   let allData = [];
+  let supabaseClient = null;
 
-  // Senarai PIC (Dikunci/Hardcode mengikut permintaan rasmi PPD Subis)
   const senaraiTetapPIC = [
     "ABANG IZZAT BIN ABANG ABDUL RAHMAN",
     "AHMAD AL-AFIQ BIN FADLI",
@@ -180,38 +173,55 @@
     "ISWAZIAH BINTI MUSTAFA"
   ];
 
-  window.onload = () => {
-    fetchDataFromSupabase();
-  };
-
-  async function fetchDataFromSupabase() {
-    document.getElementById('loader').style.display = 'block';
+  // Fungsi kebal memuatkan sistem
+  async function initApp() {
+    const statLabel = document.getElementById('statLabel');
+    const loader = document.getElementById('loader');
     
-    try {
-      // Ambil semua data dari table 'takwim_spbm'
-      const { data, error } = await supabase
-        .from('takwim_spbm')
-        .select('*');
+    loader.style.display = 'block';
+    statLabel.innerText = "Memulakan sambungan ke Supabase...";
 
-      if (error) throw error;
+    try {
+      // 1. Semak Pustaka JS
+      if (!window.supabase) {
+        throw new Error("Sistem CDN Supabase tidak dapat dimuatkan. Sila periksa capaian internet anda.");
+      }
+
+      // 2. Set Kunci Akses (URL & Key anda dimasukkan di sini)
+      const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; 
+      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA';
       
-      // Jika data kosong, sistem tidak tergendala (fallback mock data)
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+      // 3. Menarik Data
+      statLabel.innerText = "Menarik maklumat program...";
+      const { data, error } = await supabaseClient.from('takwim_spbm').select('*');
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      
+      // Jika jadual kosong, beri mesej lalai supaya web tak tergendala
       let rawData = data && data.length > 0 ? data : [
-         { program: "Tiada Data di Pangkalan", unit: "Sistem", pic: "Sistem", tempat: "-", tarikh_mula: "2026-07-15", tarikh_tamat: "2026-07-15" }
+         { program: "Tiada Data dijumpai. Sila hantar dari Google Sheets", unit: "-", pic: "-", tempat: "-", tarikh_mula: "2026-07-15", tarikh_tamat: "2026-07-15" }
       ];
 
       processIncomingData(rawData);
+
     } catch (error) {
-      console.error('Ralat menarik data:', error);
-      document.getElementById('statLabel').innerHTML = `<span class="text-danger">Ralat menarik data dari Supabase. Sila semak konsol.</span>`;
+      console.error(error);
+      statLabel.innerHTML = `<span class="text-danger fw-bold">RALAT: ${error.message}</span>`;
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase. Sila pastikan nama jadual "takwim_spbm" wujud, tiada halangan RLS, dan URL/Key adalah tepat.</td></tr>`;
     } finally {
-      document.getElementById('loader').style.display = 'none';
+      loader.style.display = 'none';
     }
   }
 
+  // Mulakan sistem bila DOM sudah bersedia
+  document.addEventListener('DOMContentLoaded', initApp);
+
   function processIncomingData(data) {
     allData = data.map(item => {
-      // Supabase biasanya memulangkan tarikh dalam format YYYY-MM-DD
       const dateString = item.tarikh_mula || '';
       const dateEndString = item.tarikh_tamat || '';
       
@@ -220,7 +230,6 @@
       
       if (!isNaN(d.getTime())) {
          timeValue = d.getTime();
-         // Format DD/MM/YYYY untuk UI
          tarikhMulaFormatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
       }
 
@@ -229,7 +238,6 @@
          tarikhTamatFormatted = `${String(dEnd.getDate()).padStart(2,'0')}/${String(dEnd.getMonth()+1).padStart(2,'0')}/${dEnd.getFullYear()}`;
       }
 
-      // Bersihkan nama PIC dari space tambahan
       const cleanPic = (item.pic || "").trim().replace(/\s+/g, ' ');
 
       return { 
@@ -246,22 +254,19 @@
     });
     
     initDropdowns();
-    filterData(); // Menapis kepada tetapan lalai "Minggu Ini"
+    filterData(); 
   }
 
   function initDropdowns() {
-    // 1. Tapis Unit (Dibuat automatik dari data unik, dibersihkan)
     const units = [...new Set(allData.map(i => i.unit.trim().toUpperCase()))].filter(Boolean).sort();
     const unitSelect = document.getElementById('filterUnit');
     unitSelect.innerHTML = '<option value="">-- Semua Unit --</option>';
     
     units.forEach(u => {
-      // Tukar ke Title Case
       const displayUnit = u.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
       unitSelect.add(new Option(displayUnit, u.toLowerCase()));
     });
 
-    // 2. Tapis PIC (Hardcoded dari senarai rasmi di atas)
     const picSelect = document.getElementById('filterPic');
     picSelect.innerHTML = '<option value="">-- Semua PIC --</option>';
     senaraiTetapPIC.forEach(pic => {
@@ -287,8 +292,7 @@
     document.getElementById('searchBox').value = '';
     document.getElementById('filterUnit').value = '';
     document.getElementById('filterPic').value = '';
-    document.getElementById('dateRangeOption').value = 'thisWeek'; // Kembali ke default Minggu Ini
-    
+    document.getElementById('dateRangeOption').value = 'thisWeek'; 
     handleTimeOptionChange();
   }
 
@@ -299,7 +303,7 @@
     const timeOpt = document.getElementById('dateRangeOption').value;
     
     const currentDate = new Date();
-    currentDate.setHours(0,0,0,0); // Reset masa ke 00:00 untuk pengiraan tepat
+    currentDate.setHours(0,0,0,0);
     const currentMonth = currentDate.getMonth();
     const currentYear = currentDate.getFullYear();
 
@@ -309,13 +313,12 @@
                           item.tempat.toLowerCase().includes(searchQuery);
 
       const matchUnit = !filterUnit || item.unit.toLowerCase() === filterUnit;
-      // Gunakan includes supaya multi-pic masih ditangkap
       const matchPic = !filterPic || item.pic.toLowerCase().includes(filterPic);
       
       let matchDate = true;
       
       if (timeOpt === 'thisWeek') {
-        const dayOfWeek = currentDate.getDay(); // 0(Ahad)-6(Sabtu)
+        const dayOfWeek = currentDate.getDay(); 
         const startOfWeek = new Date(currentYear, currentMonth, currentDate.getDate() - dayOfWeek).getTime();
         const endOfWeek = new Date(currentYear, currentMonth, currentDate.getDate() - dayOfWeek + 6, 23, 59, 59, 999).getTime();
         matchDate = (item._time >= startOfWeek && item._time <= endOfWeek);
@@ -358,7 +361,6 @@
     const endOfWeek = new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate(), 23, 59, 59, 999).getTime();
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
 
-    // 1. Labeling Categories & Colors
     data.forEach(item => {
       const t = item._time;
       if (t < today) {
@@ -374,13 +376,11 @@
       }
     });
 
-    // 2. Sorting by Category then Date
     data.sort((a, b) => {
       if (a._cat !== b._cat) return a._cat - b._cat; 
       return a._time - b._time;
     });
 
-    // Group by Date String
     const groupedData = data.reduce((acc, item) => {
       (acc[item.tarikhMula] = acc[item.tarikhMula] || []).push(item);
       return acc;
@@ -403,7 +403,6 @@
         programHTML += `<div class="inner-card border-start border-5 border-${cBorder}"><div class="program-badge m-0 bg-${cBorder} ${cBorder==='warning'?'text-dark':'text-white'}">${i.program}</div></div>`;
         unitHTML += `<div class="inner-card text-muted fw-medium">${i.unit}</div>`;
         
-        // Memecahkan PIC jadi list nombor jika ada multi-pic
         const picArray = i.pic.split(',');
         let picList = '<ol class="pic-list">';
         picArray.forEach(p => {
@@ -416,7 +415,6 @@
         tempatHTML += `<div class="inner-card"><strong>${i.tempat}</strong></div>`;
       });
 
-      // Split tarikhMula untuk dipaparkan besar-besar
       const dateParts = date.split('/');
       let displayDay = dateParts[0] || "-";
       let displayMonthYear = (dateParts[1] && dateParts[2]) ? `${dateParts[1]}/${dateParts[2]}` : "-";
@@ -438,7 +436,7 @@
     if(!html) {
         html = `<tr><td colspan="6" class="py-5 text-muted text-center fw-medium">
             <svg width="40" height="40" class="mb-3 text-secondary opacity-50" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h8v2H4v-2z"/></svg>
-            <br>Tiada program dijumpai untuk pilihan ini.
+            <br>Tiada program dijumpai untuk pilihan masa ini.
         </td></tr>`;
     }
     tbody.innerHTML = html;
