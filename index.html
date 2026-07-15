@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Takwim SPBM 2026 - PPD Subis</title>
+  
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <style>
+    :root { 
+      --primary-red: #d32f2f; 
+      --dark-red: #b71c1c; 
+      --gold: #ffc107; 
+      --bg-color: #f8f9fa;
+    }
+    body { padding: 20px; background-color: var(--bg-color); font-family: 'Inter', sans-serif; }
+    
+    .brand-header { 
+      background: linear-gradient(135deg, var(--dark-red), var(--primary-red)); 
+      color: white; padding: 2rem 1.5rem; border-radius: 16px; margin-bottom: 25px; 
+      box-shadow: 0 10px 20px rgba(211, 47, 47, 0.15); position: relative; overflow: hidden;
+    }
+
+    .btn-add {
+      background-color: var(--gold); color: #000; font-weight: 700; border: none;
+      padding: 10px 24px; border-radius: 50px; text-decoration: none;
+      display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 15px;
+    }
+    .btn-add:hover { background-color: #e0a800; transform: translateY(-3px); color: #000; box-shadow: 0 6px 12px rgba(0,0,0,0.15);}
+
+    .filter-card { background: white; border-top: 5px solid var(--primary-red); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); margin-bottom: 25px; }
+    
+    .table-container { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
+    .table thead { background-color: var(--primary-red); color: white; }
+    .table th { text-align: center; vertical-align: middle !important; font-size: 0.85rem; padding: 16px; border: none; letter-spacing: 0.5px;}
+    .table td { vertical-align: middle !important; padding: 15px 12px !important; border: 1px solid #f0f0f0; font-size: 0.9rem;}
+    
+    .table tbody tr:nth-child(odd) { background-color: #ffffff; }
+    .table tbody tr:nth-child(even) { background-color: #fff9f9; } 
+    .table tbody tr:hover { background-color: #ffe8e8 !important; transition: 0.2s; }
+
+    .program-badge { padding: 6px 12px; border-radius: 8px; display: inline-block; margin: 4px 2px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
+    .td-pic { font-size: 0.8rem !important; text-transform: uppercase; color: #444; font-weight: 500;}
+    
+    .inner-card {
+      background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; margin-bottom: 8px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 70px;
+    }
+    .inner-card:last-child { margin-bottom: 0; }
+    
+    .pic-card { align-items: flex-start !important; justify-content: center !important; text-align: left !important; }
+    .pic-list { margin: 0; padding-left: 1.2rem; font-weight: 600; }
+    .pic-list li { padding-bottom: 4px; line-height: 1.2; }
+    
+    /* STREAMING_CHUNK: Menetapkan animasi pemuat *(loader)* untuk petunjuk data... */
+    .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-red); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div class="container-fluid py-2">
+  <div class="brand-header text-center">
+    <h2 class="fw-bold m-0 text-uppercase tracking-wide">Takwim SPBM 2026</h2>
+    <span class="opacity-75 d-block mt-1 fw-medium letter-spacing-1">PEJABAT PENDIDIKAN DAERAH SUBIS</span>
+    <!-- Link Google Form diletakkan di sini -->
+    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf_vLeR_u8O3IhGdQHpjfBGEzQTwq6uEykapjZIiTKNvGM4ig/viewform" target="_blank" class="btn-add">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
+      TAMBAH PROGRAM BARU
+    </a>
+  </div>
+
+  <div class="filter-card">
+    <div class="row g-4">
+      <div class="col-md-12 mb-2 mt-0">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0 text-muted">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+          </span>
+          <input type="text" id="searchBox" class="form-control border-start-0 ps-0" placeholder="Cari nama program, tempat..." onkeyup="filterData()">
+        </div>
+      </div>
+
+      <div class="col-md-3">
+        <label class="form-label fw-bold text-muted small text-uppercase">Tapis Unit</label>
+        <select id="filterUnit" class="form-select border-0 bg-light" onchange="filterData()">
+          <option value="">-- Semua Unit --</option>
+        </select>
+      </div>
+      
+      <div class="col-md-3">
+        <label class="form-label fw-bold text-muted small text-uppercase">Tapis PIC</label>
+        <select id="filterPic" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
+          <option value="">-- Semua PIC --</option>
+        </select>
+      </div>
+      
+      <div class="col-md-3">
+        <label class="form-label fw-bold text-muted small text-uppercase">Pilihan Masa</label>
+        <select id="dateRangeOption" class="form-select border-0 bg-light" onchange="handleTimeOptionChange()">
+          <option value="all">Semua Tarikh</option>
+          <option value="thisWeek" selected>Minggu Ini</option>
+          <option value="thisMonth">Bulan Ini</option>
+          <option value="nextMonth">Bulan Depan</option>
+          <option value="specificMonth">Bulan Tertentu...</option>
+          <option value="custom">Julat Tarikh...</option>
+        </select>
+      </div>
+
+      <div id="specificMonthGroup" class="col-md-3 d-none">
+        <label class="form-label fw-bold text-muted small text-uppercase">Bulan Pilihan</label>
+        <select id="selectedMonth" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
+          <option value="0">Januari</option><option value="1">Februari</option><option value="2">Mac</option>
+          <option value="3">April</option><option value="4">Mei</option><option value="5">Jun</option>
+          <option value="6">Julai</option><option value="7">Ogos</option><option value="8">September</option>
+          <option value="9">Oktober</option><option value="10">November</option><option value="11">Disember</option>
+        </select>
+      </div>
+
+      <div id="customRangeGroup" class="col-md-3 d-none">
+        <label class="form-label fw-bold text-muted small text-uppercase">Mula - Tamat</label>
+        <div class="input-group input-group-sm shadow-sm rounded">
+          <input type="date" id="startDate" class="form-control border-0 bg-light" onchange="filterData()">
+          <input type="date" id="endDate" class="form-control border-0 bg-light" onchange="filterData()">
+        </div>
+      </div>
+      
+      <div class="col-md-12 text-end mt-3">
+        <button onclick="resetFilters()" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium">
+          Set Semula Tapisan
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="table-container mt-2">
+    <div class="p-3 bg-light d-flex justify-content-between align-items-center border-bottom">
+      <div class="d-flex align-items-center">
+        <div id="loader" class="loader me-3"></div>
+        <span class="fw-bold text-muted small" id="statLabel">Memproses Data dari Supabase...</span>
+      </div>
+    </div>
+    <div class="table-responsive">
+      <table class="table mb-0">
+        <thead>
+          <tr>
+            <th style="width: 12%">TARIKH</th>
+            <th style="width: 25%">PROGRAM</th>
+            <th style="width: 15%">UNIT</th>
+            <th style="width: 15%">PIC</th>
+            <th style="width: 13%">TAMAT</th>
+            <th>TEMPAT</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ⚠️ PENTING: TUKAR URL DAN KEY INI DENGAN MAKLUMAT SUPABASE ANDA
+  const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; // Salin dari Project Settings -> API
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA'; // Salin 'anon' key dari halaman yang sama
+
+  const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  let allData = [];
+
+  // Senarai PIC (Dikunci/Hardcode mengikut permintaan rasmi PPD Subis)
+  const senaraiTetapPIC = [
+    "ABANG IZZAT BIN ABANG ABDUL RAHMAN",
+    "AHMAD AL-AFIQ BIN FADLI",
+    "CHRISTOPHER ANAK BARAT",
+    "IRWAN BIN TAMBI",
+    "ISWAZIAH BINTI MUSTAFA"
+  ];
+
+  window.onload = () => {
+    fetchDataFromSupabase();
+  };
+
+  async function fetchDataFromSupabase() {
+    document.getElementById('loader').style.display = 'block';
+    
+    try {
+      // Ambil semua data dari table 'takwim_spbm'
+      const { data, error } = await supabase
+        .from('takwim_spbm')
+        .select('*');
+
+      if (error) throw error;
+      
+      // Jika data kosong, sistem tidak tergendala (fallback mock data)
+      let rawData = data && data.length > 0 ? data : [
+         { program: "Tiada Data di Pangkalan", unit: "Sistem", pic: "Sistem", tempat: "-", tarikh_mula: "2026-07-15", tarikh_tamat: "2026-07-15" }
+      ];
+
+      processIncomingData(rawData);
+    } catch (error) {
+      console.error('Ralat menarik data:', error);
+      document.getElementById('statLabel').innerHTML = `<span class="text-danger">Ralat menarik data dari Supabase. Sila semak konsol.</span>`;
+    } finally {
+      document.getElementById('loader').style.display = 'none';
+    }
+  }
+
+  function processIncomingData(data) {
+    allData = data.map(item => {
+      // Supabase biasanya memulangkan tarikh dalam format YYYY-MM-DD
+      const dateString = item.tarikh_mula || '';
+      const dateEndString = item.tarikh_tamat || '';
+      
+      let d = new Date(dateString);
+      let timeValue = 0, tarikhMulaFormatted = "-", tarikhTamatFormatted = "-";
+      
+      if (!isNaN(d.getTime())) {
+         timeValue = d.getTime();
+         // Format DD/MM/YYYY untuk UI
+         tarikhMulaFormatted = `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`;
+      }
+
+      let dEnd = new Date(dateEndString);
+      if (!isNaN(dEnd.getTime())) {
+         tarikhTamatFormatted = `${String(dEnd.getDate()).padStart(2,'0')}/${String(dEnd.getMonth()+1).padStart(2,'0')}/${dEnd.getFullYear()}`;
+      }
+
+      // Bersihkan nama PIC dari space tambahan
+      const cleanPic = (item.pic || "").trim().replace(/\s+/g, ' ');
+
+      return { 
+        program: item.program || "",
+        unit: (item.unit || "").trim(),
+        tempat: item.tempat || "",
+        tarikhMula: tarikhMulaFormatted,
+        tarikhTamat: tarikhTamatFormatted,
+        pic: cleanPic, 
+        _time: timeValue, 
+        _month: d.getMonth(), 
+        _year: d.getFullYear() 
+      };
+    });
+    
+    initDropdowns();
+    filterData(); // Menapis kepada tetapan lalai "Minggu Ini"
+  }
+
+  function initDropdowns() {
+    // 1. Tapis Unit (Dibuat automatik dari data unik, dibersihkan)
+    const units = [...new Set(allData.map(i => i.unit.trim().toUpperCase()))].filter(Boolean).sort();
+    const unitSelect = document.getElementById('filterUnit');
+    unitSelect.innerHTML = '<option value="">-- Semua Unit --</option>';
+    
+    units.forEach(u => {
+      // Tukar ke Title Case
+      const displayUnit = u.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+      unitSelect.add(new Option(displayUnit, u.toLowerCase()));
+    });
+
+    // 2. Tapis PIC (Hardcoded dari senarai rasmi di atas)
+    const picSelect = document.getElementById('filterPic');
+    picSelect.innerHTML = '<option value="">-- Semua PIC --</option>';
+    senaraiTetapPIC.forEach(pic => {
+      const displayPic = pic.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+      picSelect.add(new Option(displayPic, pic.toLowerCase()));
+    });
+  }
+
+  function handleTimeOptionChange() {
+    const timeOpt = document.getElementById('dateRangeOption').value;
+    document.getElementById('specificMonthGroup').classList.add('d-none');
+    document.getElementById('customRangeGroup').classList.add('d-none');
+    
+    if (timeOpt === 'specificMonth') {
+      document.getElementById('specificMonthGroup').classList.remove('d-none');
+    } else if (timeOpt === 'custom') {
+      document.getElementById('customRangeGroup').classList.remove('d-none');
+    }
+    filterData();
+  }
+
+  function resetFilters() {
+    document.getElementById('searchBox').value = '';
+    document.getElementById('filterUnit').value = '';
+    document.getElementById('filterPic').value = '';
+    document.getElementById('dateRangeOption').value = 'thisWeek'; // Kembali ke default Minggu Ini
+    
+    handleTimeOptionChange();
+  }
+
+  function filterData() {
+    const searchQuery = document.getElementById('searchBox').value.toLowerCase();
+    const filterUnit = document.getElementById('filterUnit').value;
+    const filterPic = document.getElementById('filterPic').value; 
+    const timeOpt = document.getElementById('dateRangeOption').value;
+    
+    const currentDate = new Date();
+    currentDate.setHours(0,0,0,0); // Reset masa ke 00:00 untuk pengiraan tepat
+    const currentMonth = currentDate.getMonth();
+    const currentYear = currentDate.getFullYear();
+
+    const filtered = allData.filter(item => {
+      const matchSearch = !searchQuery || 
+                          item.program.toLowerCase().includes(searchQuery) || 
+                          item.tempat.toLowerCase().includes(searchQuery);
+
+      const matchUnit = !filterUnit || item.unit.toLowerCase() === filterUnit;
+      // Gunakan includes supaya multi-pic masih ditangkap
+      const matchPic = !filterPic || item.pic.toLowerCase().includes(filterPic);
+      
+      let matchDate = true;
+      
+      if (timeOpt === 'thisWeek') {
+        const dayOfWeek = currentDate.getDay(); // 0(Ahad)-6(Sabtu)
+        const startOfWeek = new Date(currentYear, currentMonth, currentDate.getDate() - dayOfWeek).getTime();
+        const endOfWeek = new Date(currentYear, currentMonth, currentDate.getDate() - dayOfWeek + 6, 23, 59, 59, 999).getTime();
+        matchDate = (item._time >= startOfWeek && item._time <= endOfWeek);
+      } else if (timeOpt === 'thisMonth') {
+        matchDate = (item._month === currentMonth && item._year === currentYear);
+      } else if (timeOpt === 'nextMonth') {
+        let nextMonth = currentMonth + 1;
+        let checkYear = currentYear;
+        if (nextMonth > 11) { nextMonth = 0; checkYear++; }
+        matchDate = (item._month === nextMonth && item._year === checkYear);
+      } else if (timeOpt === 'specificMonth') {
+        const selectedMonth = parseInt(document.getElementById('selectedMonth').value);
+        matchDate = (item._month === selectedMonth);
+      } else if (timeOpt === 'custom') {
+        const startInput = document.getElementById('startDate').value;
+        const endInput = document.getElementById('endDate').value;
+        const sTime = new Date(startInput).setHours(0,0,0,0);
+        const eTime = new Date(endInput).setHours(23,59,59,999);
+        if (!isNaN(sTime) && !isNaN(eTime)) {
+            matchDate = (item._time >= sTime && item._time <= eTime);
+        }
+      }
+      
+      return matchSearch && matchUnit && matchPic && matchDate;
+    });
+    
+    renderTable(filtered);
+  }
+
+  function renderTable(data) {
+    const tbody = document.getElementById('tableBody');
+    document.getElementById('statLabel').innerHTML = `JUMLAH REKOD: <span class="text-danger fw-bold fs-6">${data.length}</span>`;
+    
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    
+    const dayOfWeek = now.getDay();
+    const satDate = new Date(now);
+    satDate.setDate(now.getDate() - dayOfWeek + 6);
+    const endOfWeek = new Date(satDate.getFullYear(), satDate.getMonth(), satDate.getDate(), 23, 59, 59, 999).getTime();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+    // 1. Labeling Categories & Colors
+    data.forEach(item => {
+      const t = item._time;
+      if (t < today) {
+        item._cat = 4; item._color = 'danger'; item._label = 'LEPAS'; 
+      } else if (t === today) {
+        item._cat = 0; item._color = 'success'; item._label = 'HARI INI'; 
+      } else if (t > today && t <= endOfWeek) {
+        item._cat = 1; item._color = 'success'; item._label = 'MINGGU INI'; 
+      } else if (t > endOfWeek && t <= endOfMonth) {
+        item._cat = 2; item._color = 'warning'; item._label = 'BULAN INI'; 
+      } else {
+        item._cat = 3; item._color = 'warning'; item._label = 'SELEPAS'; 
+      }
+    });
+
+    // 2. Sorting by Category then Date
+    data.sort((a, b) => {
+      if (a._cat !== b._cat) return a._cat - b._cat; 
+      return a._time - b._time;
+    });
+
+    // Group by Date String
+    const groupedData = data.reduce((acc, item) => {
+      (acc[item.tarikhMula] = acc[item.tarikhMula] || []).push(item);
+      return acc;
+    }, {});
+
+    const sortedDates = [...new Set(data.map(item => item.tarikhMula))];
+
+    let html = '';
+    
+    sortedDates.forEach(date => {
+      const items = groupedData[date];
+      const colorClass = items[0]._color; 
+      const label = items[0]._label;
+      const textColorClass = colorClass === 'warning' ? 'text-dark' : `text-${colorClass}`;
+      
+      let programHTML = '', unitHTML = '', picHTML = '', tamatHTML = '', tempatHTML = '';
+      
+      items.forEach(i => {
+        let cBorder = i._color;
+        programHTML += `<div class="inner-card border-start border-5 border-${cBorder}"><div class="program-badge m-0 bg-${cBorder} ${cBorder==='warning'?'text-dark':'text-white'}">${i.program}</div></div>`;
+        unitHTML += `<div class="inner-card text-muted fw-medium">${i.unit}</div>`;
+        
+        // Memecahkan PIC jadi list nombor jika ada multi-pic
+        const picArray = i.pic.split(',');
+        let picList = '<ol class="pic-list">';
+        picArray.forEach(p => {
+          if (p.trim()) picList += `<li>${p.trim()}</li>`;
+        });
+        picList += '</ol>';
+
+        picHTML += `<div class="inner-card pic-card td-pic">${picList}</div>`;
+        tamatHTML += `<div class="inner-card fw-medium">${i.tarikhTamat}</div>`;
+        tempatHTML += `<div class="inner-card"><strong>${i.tempat}</strong></div>`;
+      });
+
+      // Split tarikhMula untuk dipaparkan besar-besar
+      const dateParts = date.split('/');
+      let displayDay = dateParts[0] || "-";
+      let displayMonthYear = (dateParts[1] && dateParts[2]) ? `${dateParts[1]}/${dateParts[2]}` : "-";
+
+      html += `<tr>
+        <td class="shadow-sm bg-white rounded-3 m-2 d-table-cell align-middle text-center border-start border-5 border-${colorClass}" style="width: 130px;">
+          <div class="fs-4 ${textColorClass} fw-bolder">${displayDay}</div>
+          <div class="small text-muted fw-bold mb-1">${displayMonthYear}</div>
+          <span class="badge bg-${colorClass} ${colorClass==='warning'?'text-dark':'text-white'} shadow-sm rounded-pill" style="font-size:0.65rem; letter-spacing:0.5px; padding: 5px 8px;">${label}</span>
+        </td>
+        <td>${programHTML}</td>
+        <td>${unitHTML}</td>
+        <td>${picHTML}</td>
+        <td>${tamatHTML}</td>
+        <td>${tempatHTML}</td>
+      </tr>`;
+    });
+    
+    if(!html) {
+        html = `<tr><td colspan="6" class="py-5 text-muted text-center fw-medium">
+            <svg width="40" height="40" class="mb-3 text-secondary opacity-50" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h8v2H4v-2z"/></svg>
+            <br>Tiada program dijumpai untuk pilihan ini.
+        </td></tr>`;
+    }
+    tbody.innerHTML = html;
+  }
+</script>
+</body>
+</html>
