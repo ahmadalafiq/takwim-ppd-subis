@@ -7,8 +7,10 @@
   
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <!-- Supabase JS Client -->
+  
+  <!-- Supabase JS Client & Bootstrap Bundle -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   <style>
     :root { 
@@ -17,7 +19,7 @@
       --gold: #ffc107; 
       --bg-color: #f8f9fa;
     }
-    body { padding: 20px; background-color: var(--bg-color); font-family: 'Inter', sans-serif; }
+    body { background-color: var(--bg-color); font-family: 'Inter', sans-serif; padding-bottom: 80px; }
     
     .brand-header { 
       background: linear-gradient(135deg, var(--dark-red), var(--primary-red)); 
@@ -29,9 +31,20 @@
       background-color: var(--gold); color: #000; font-weight: 700; border: none;
       padding: 10px 24px; border-radius: 50px; text-decoration: none;
       display: inline-flex; align-items: center; gap: 8px; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 15px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-top: 15px; cursor: pointer;
     }
     .btn-add:hover { background-color: #e0a800; transform: translateY(-3px); color: #000; box-shadow: 0 6px 12px rgba(0,0,0,0.15);}
+
+    /* Floating Action Button untuk Mobile */
+    .fab-mobile {
+      position: fixed; bottom: 20px; right: 20px;
+      width: 60px; height: 60px; border-radius: 50%;
+      background-color: var(--primary-red); color: white;
+      display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+      z-index: 1000; cursor: pointer; transition: transform 0.3s ease;
+    }
+    .fab-mobile:active { transform: scale(0.9); }
 
     .filter-card { background: white; border-top: 5px solid var(--primary-red); padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04); margin-bottom: 25px; }
     
@@ -45,7 +58,6 @@
     .table tbody tr:hover { background-color: #ffe8e8 !important; transition: 0.2s; }
 
     .program-badge { padding: 6px 12px; border-radius: 8px; display: inline-block; margin: 4px 2px; font-weight: 600; font-size: 0.85rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);}
-    .td-pic { font-size: 0.8rem !important; text-transform: uppercase; color: #444; font-weight: 500;}
     
     .inner-card {
       background: #ffffff; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; margin-bottom: 8px;
@@ -53,9 +65,21 @@
     }
     .inner-card:last-child { margin-bottom: 0; }
     
-    .pic-card { align-items: flex-start !important; justify-content: center !important; text-align: left !important; }
-    .pic-list { margin: 0; padding-left: 1.2rem; font-weight: 600; }
-    .pic-list li { padding-bottom: 4px; line-height: 1.2; }
+    .pic-list { margin: 0; padding-left: 1.2rem; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; color: #444; }
+    .pic-list li { padding-bottom: 4px; line-height: 1.2; text-align: left;}
+
+    /* Reka Bentuk Kad Mudah Alih (Mobile) */
+    .mobile-date-header {
+      background-color: #f1f3f5; padding: 12px 15px; border-radius: 8px; font-weight: 700;
+      margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+      border-left: 5px solid var(--primary-red);
+    }
+    .mobile-program-card {
+      background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05); border: 1px solid #f0f0f0;
+    }
+    .mobile-field-label { font-size: 0.75rem; color: #888; text-transform: uppercase; font-weight: 600; margin-bottom: 2px;}
+    .mobile-field-value { font-size: 0.95rem; font-weight: 500; margin-bottom: 12px; color: #333;}
     
     .loader { display: none; border: 3px solid #f3f3f3; border-top: 3px solid var(--primary-red); border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -63,75 +87,89 @@
 </head>
 <body>
 
-<div class="container-fluid py-2">
+<div class="container-fluid py-3 px-md-4">
   <div class="brand-header text-center">
     <h2 class="fw-bold m-0 text-uppercase tracking-wide">Takwim SPBM 2026</h2>
     <span class="opacity-75 d-block mt-1 fw-medium letter-spacing-1">PEJABAT PENDIDIKAN DAERAH SUBIS</span>
-    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf_vLeR_u8O3IhGdQHpjfBGEzQTwq6uEykapjZIiTKNvGM4ig/viewform" target="_blank" class="btn-add">
+    <button onclick="bukaModalKataLaluan()" class="btn-add d-none d-md-inline-flex">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
       TAMBAH PROGRAM BARU
-    </a>
+    </button>
+  </div>
+
+  <!-- FAB Untuk Mobile -->
+  <div class="fab-mobile d-md-none" onclick="bukaModalKataLaluan()">
+    <svg width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
   </div>
 
   <div class="filter-card">
-    <div class="row g-4">
-      <div class="col-md-12 mb-2 mt-0">
-        <div class="input-group">
-          <span class="input-group-text bg-white border-end-0 text-muted">
-            <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
-          </span>
-          <input type="text" id="searchBox" class="form-control border-start-0 ps-0" placeholder="Cari nama program, tempat..." onkeyup="filterData()">
+    <div class="d-flex justify-content-between align-items-center mb-2 d-md-none">
+      <span class="fw-bold text-muted">Panel Carian & Tapisan</span>
+      <button class="btn btn-sm btn-outline-danger rounded-pill" type="button" data-bs-toggle="collapse" data-bs-target="#filterCollapse" aria-expanded="false" aria-controls="filterCollapse">
+        Buka Penapis
+      </button>
+    </div>
+    
+    <div class="collapse d-md-block" id="filterCollapse">
+      <div class="row g-4 mt-1 mt-md-0">
+        <div class="col-md-12 mb-2 mt-0">
+          <div class="input-group">
+            <span class="input-group-text bg-white border-end-0 text-muted">
+              <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/></svg>
+            </span>
+            <input type="text" id="searchBox" class="form-control border-start-0 ps-0" placeholder="Cari nama program, tempat..." onkeyup="filterData()">
+          </div>
         </div>
-      </div>
 
-      <div class="col-md-3">
-        <label class="form-label fw-bold text-muted small text-uppercase">Tapis Unit</label>
-        <select id="filterUnit" class="form-select border-0 bg-light" onchange="filterData()">
-          <option value="">-- Semua Unit --</option>
-        </select>
-      </div>
-      
-      <div class="col-md-3">
-        <label class="form-label fw-bold text-muted small text-uppercase">Tapis PIC</label>
-        <select id="filterPic" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
-          <option value="">-- Semua PIC --</option>
-        </select>
-      </div>
-      
-      <div class="col-md-3">
-        <label class="form-label fw-bold text-muted small text-uppercase">Pilihan Masa</label>
-        <select id="dateRangeOption" class="form-select border-0 bg-light" onchange="handleTimeOptionChange()">
-          <option value="all">Semua Tarikh</option>
-          <option value="thisWeek" selected>Minggu Ini</option>
-          <option value="thisMonth">Bulan Ini</option>
-          <option value="nextMonth">Bulan Depan</option>
-          <option value="specificMonth">Bulan Tertentu...</option>
-          <option value="custom">Julat Tarikh...</option>
-        </select>
-      </div>
-
-      <div id="specificMonthGroup" class="col-md-3 d-none">
-        <label class="form-label fw-bold text-muted small text-uppercase">Bulan Pilihan</label>
-        <select id="selectedMonth" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
-          <option value="0">Januari</option><option value="1">Februari</option><option value="2">Mac</option>
-          <option value="3">April</option><option value="4">Mei</option><option value="5">Jun</option>
-          <option value="6">Julai</option><option value="7">Ogos</option><option value="8">September</option>
-          <option value="9">Oktober</option><option value="10">November</option><option value="11">Disember</option>
-        </select>
-      </div>
-
-      <div id="customRangeGroup" class="col-md-3 d-none">
-        <label class="form-label fw-bold text-muted small text-uppercase">Mula - Tamat</label>
-        <div class="input-group input-group-sm shadow-sm rounded">
-          <input type="date" id="startDate" class="form-control border-0 bg-light" onchange="filterData()">
-          <input type="date" id="endDate" class="form-control border-0 bg-light" onchange="filterData()">
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small text-uppercase">Tapis Unit</label>
+          <select id="filterUnit" class="form-select border-0 bg-light" onchange="filterData()">
+            <option value="">-- Semua Unit --</option>
+          </select>
         </div>
-      </div>
-      
-      <div class="col-md-12 text-end mt-3">
-        <button onclick="resetFilters()" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium">
-          Set Semula Tapisan
-        </button>
+        
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small text-uppercase">Tapis PIC</label>
+          <select id="filterPic" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
+            <option value="">-- Semua PIC --</option>
+          </select>
+        </div>
+        
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-muted small text-uppercase">Pilihan Masa</label>
+          <select id="dateRangeOption" class="form-select border-0 bg-light" onchange="handleTimeOptionChange()">
+            <option value="all">Semua Tarikh</option>
+            <option value="thisWeek" selected>Minggu Ini</option>
+            <option value="thisMonth">Bulan Ini</option>
+            <option value="nextMonth">Bulan Depan</option>
+            <option value="specificMonth">Bulan Tertentu...</option>
+            <option value="custom">Julat Tarikh...</option>
+          </select>
+        </div>
+
+        <div id="specificMonthGroup" class="col-md-3 d-none">
+          <label class="form-label fw-bold text-muted small text-uppercase">Bulan Pilihan</label>
+          <select id="selectedMonth" class="form-select border-0 bg-light shadow-sm" onchange="filterData()">
+            <option value="0">Januari</option><option value="1">Februari</option><option value="2">Mac</option>
+            <option value="3">April</option><option value="4">Mei</option><option value="5">Jun</option>
+            <option value="6">Julai</option><option value="7">Ogos</option><option value="8">September</option>
+            <option value="9">Oktober</option><option value="10">November</option><option value="11">Disember</option>
+          </select>
+        </div>
+
+        <div id="customRangeGroup" class="col-md-3 d-none">
+          <label class="form-label fw-bold text-muted small text-uppercase">Mula - Tamat</label>
+          <div class="input-group input-group-sm shadow-sm rounded">
+            <input type="date" id="startDate" class="form-control border-0 bg-light" onchange="filterData()">
+            <input type="date" id="endDate" class="form-control border-0 bg-light" onchange="filterData()">
+          </div>
+        </div>
+        
+        <div class="col-md-12 text-end mt-3">
+          <button onclick="resetFilters()" class="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-medium">
+            Set Semula
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -143,7 +181,9 @@
         <span class="fw-bold text-muted small" id="statLabel">Menghubungi Sistem...</span>
       </div>
     </div>
-    <div class="table-responsive">
+    
+    <!-- Jadual Untuk Paparan Komputer (Desktop) -->
+    <div class="table-responsive d-none d-md-block">
       <table class="table mb-0">
         <thead>
           <tr>
@@ -157,6 +197,100 @@
         </thead>
         <tbody id="tableBody"></tbody>
       </table>
+    </div>
+
+    <!-- Kad Untuk Paparan Telefon (Mobile) -->
+    <div id="mobileCardContainer" class="d-md-none p-3 bg-white">
+        <!-- Kad akan dijana di sini oleh JavaScript -->
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalKataLaluan" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header bg-danger text-white border-0">
+        <h5 class="modal-title fs-6 fw-bold">Pengesahan PPD</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <label class="form-label text-muted small fw-bold">Masukkan Kata Laluan:</label>
+        <input type="password" id="inputKataLaluan" class="form-control form-control-lg bg-light" placeholder="••••">
+        <div id="ralatKataLaluan" class="text-danger small mt-2 d-none fw-bold">Katalaluan tidak tepat!</div>
+      </div>
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-danger w-100 fw-bold rounded-pill" onclick="semakKataLaluan()">Sahkan</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalTambahProgram" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content border-0 shadow-lg">
+      <div class="modal-header bg-dark text-white border-0">
+        <h5 class="modal-title fw-bold">Daftar Program Baru</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4 bg-light">
+        <form id="formTambahProgram" onsubmit="hantarDataKeSupabase(event)">
+          <div class="row g-3">
+            <div class="col-md-12">
+              <label class="form-label fw-bold small text-muted">Nama Program <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="formProgram" required placeholder="Contoh: Bengkel Pemantapan ICT">
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Tarikh Mula <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="formMula" required>
+            </div>
+            
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Tarikh Tamat <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" id="formTamat" required>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Unit <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="formUnit" list="datalistUnit" required placeholder="Tulis atau pilih unit...">
+              <datalist id="datalistUnit">
+                <!-- Dijana oleh JS -->
+              </datalist>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-bold small text-muted">Tempat <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" id="formTempat" required placeholder="Contoh: Bilik Mesyuarat Utama">
+            </div>
+
+            <div class="col-md-12">
+              <label class="form-label fw-bold small text-muted">PIC (Boleh pilih lebih dari satu) <span class="text-danger">*</span></label>
+              <div class="bg-white p-3 border rounded shadow-sm" id="containerCheckboxesPIC">
+                <!-- Checkboxes dijana oleh JS -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="mt-4 text-end">
+            <button type="button" class="btn btn-light border px-4 rounded-pill me-2" data-bs-dismiss="modal">Batal</button>
+            <button type="submit" class="btn btn-danger px-4 rounded-pill fw-bold" id="btnSimpanProgram">
+              Simpan Rekod
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalMesej" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-sm">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-body p-4 text-center">
+        <div id="ikonMesej" class="mb-3"></div>
+        <h6 id="teksMesej" class="fw-bold mb-4"></h6>
+        <button type="button" class="btn btn-secondary w-100 rounded-pill" data-bs-dismiss="modal">Tutup</button>
+      </div>
     </div>
   </div>
 </div>
@@ -173,7 +307,6 @@
     "ISWAZIAH BINTI MUSTAFA"
   ];
 
-  // Fungsi kebal memuatkan sistem
   async function initApp() {
     const statLabel = document.getElementById('statLabel');
     const loader = document.getElementById('loader');
@@ -182,18 +315,15 @@
     statLabel.innerText = "Memulakan sambungan ke Supabase...";
 
     try {
-      // 1. Semak Pustaka JS
       if (!window.supabase) {
         throw new Error("Sistem CDN Supabase tidak dapat dimuatkan. Sila periksa capaian internet anda.");
       }
 
-      // 2. Set Kunci Akses (URL & Key anda dimasukkan di sini)
       const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; 
       const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA';
       
       supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-      // 3. Menarik Data
       statLabel.innerText = "Menarik maklumat program...";
       const { data, error } = await supabaseClient.from('takwim_spbm').select('*');
 
@@ -201,23 +331,20 @@
         throw new Error(error.message);
       }
       
-      // Jika jadual kosong, beri mesej lalai supaya web tak tergendala
-      let rawData = data && data.length > 0 ? data : [
-         { program: "Tiada Data dijumpai. Sila hantar dari Google Sheets", unit: "-", pic: "-", tempat: "-", tarikh_mula: "2026-07-15", tarikh_tamat: "2026-07-15" }
-      ];
-
+      let rawData = data && data.length > 0 ? data : [];
       processIncomingData(rawData);
+      janaCheckboxesPIC(); // Siapkan borang PIC
 
     } catch (error) {
       console.error(error);
       statLabel.innerHTML = `<span class="text-danger fw-bold">RALAT: ${error.message}</span>`;
-      document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase. Sila pastikan nama jadual "takwim_spbm" wujud, tiada halangan RLS, dan URL/Key adalah tepat.</td></tr>`;
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase.</td></tr>`;
+      document.getElementById('mobileCardContainer').innerHTML = `<div class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase.</div>`;
     } finally {
       loader.style.display = 'none';
     }
   }
 
-  // Mulakan sistem bila DOM sudah bersedia
   document.addEventListener('DOMContentLoaded', initApp);
 
   function processIncomingData(data) {
@@ -244,6 +371,7 @@
         program: item.program || "",
         unit: (item.unit || "").trim(),
         tempat: item.tempat || "",
+        tarikhMulaAsal: dateString,
         tarikhMula: tarikhMulaFormatted,
         tarikhTamat: tarikhTamatFormatted,
         pic: cleanPic, 
@@ -259,12 +387,22 @@
 
   function initDropdowns() {
     const units = [...new Set(allData.map(i => i.unit.trim().toUpperCase()))].filter(Boolean).sort();
+    
+    // Tapisan Unit
     const unitSelect = document.getElementById('filterUnit');
     unitSelect.innerHTML = '<option value="">-- Semua Unit --</option>';
     
+    // Datalist Borang
+    const datalistUnit = document.getElementById('datalistUnit');
+    datalistUnit.innerHTML = '';
+
     units.forEach(u => {
       const displayUnit = u.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
       unitSelect.add(new Option(displayUnit, u.toLowerCase()));
+      
+      let option = document.createElement('option');
+      option.value = displayUnit;
+      datalistUnit.appendChild(option);
     });
 
     const picSelect = document.getElementById('filterPic');
@@ -350,11 +488,12 @@
 
   function renderTable(data) {
     const tbody = document.getElementById('tableBody');
+    const mobileContainer = document.getElementById('mobileCardContainer');
+    
     document.getElementById('statLabel').innerHTML = `JUMLAH REKOD: <span class="text-danger fw-bold fs-6">${data.length}</span>`;
     
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    
     const dayOfWeek = now.getDay();
     const satDate = new Date(now);
     satDate.setDate(now.getDate() - dayOfWeek + 6);
@@ -388,42 +527,88 @@
 
     const sortedDates = [...new Set(data.map(item => item.tarikhMula))];
 
-    let html = '';
+    let htmlDesktop = '';
+    let htmlMobile = '';
     
+    const emptyStateHTML = `
+      <div class="py-5 text-muted text-center fw-medium w-100">
+        <svg width="40" height="40" class="mb-3 text-secondary opacity-50" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h8v2H4v-2z"/></svg>
+        <br>Tiada program dijumpai.
+      </div>`;
+
+    if (sortedDates.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">${emptyStateHTML}</td></tr>`;
+        mobileContainer.innerHTML = emptyStateHTML;
+        return;
+    }
+
     sortedDates.forEach(date => {
       const items = groupedData[date];
       const colorClass = items[0]._color; 
       const label = items[0]._label;
       const textColorClass = colorClass === 'warning' ? 'text-dark' : `text-${colorClass}`;
       
-      let programHTML = '', unitHTML = '', picHTML = '', tamatHTML = '', tempatHTML = '';
-      
-      items.forEach(i => {
-        let cBorder = i._color;
-        programHTML += `<div class="inner-card border-start border-5 border-${cBorder}"><div class="program-badge m-0 bg-${cBorder} ${cBorder==='warning'?'text-dark':'text-white'}">${i.program}</div></div>`;
-        unitHTML += `<div class="inner-card text-muted fw-medium">${i.unit}</div>`;
-        
-        const picArray = i.pic.split(',');
-        let picList = '<ol class="pic-list">';
-        picArray.forEach(p => {
-          if (p.trim()) picList += `<li>${p.trim()}</li>`;
-        });
-        picList += '</ol>';
-
-        picHTML += `<div class="inner-card pic-card td-pic">${picList}</div>`;
-        tamatHTML += `<div class="inner-card fw-medium">${i.tarikhTamat}</div>`;
-        tempatHTML += `<div class="inner-card"><strong>${i.tempat}</strong></div>`;
-      });
-
       const dateParts = date.split('/');
       let displayDay = dateParts[0] || "-";
       let displayMonthYear = (dateParts[1] && dateParts[2]) ? `${dateParts[1]}/${dateParts[2]}` : "-";
 
-      html += `<tr>
+      // --- LOGIK UNTUK DESKTOP TABLE ---
+      let programHTML = '', unitHTML = '', picHTML = '', tamatHTML = '', tempatHTML = '';
+      
+      // --- LOGIK UNTUK MOBILE CARDS ---
+      htmlMobile += `
+      <div class="mobile-date-header border-${colorClass}">
+        <span class="${textColorClass}">${date}</span>
+        <span class="badge bg-${colorClass} ${colorClass==='warning'?'text-dark':'text-white'} shadow-sm">${label}</span>
+      </div>`;
+
+      items.forEach(i => {
+        let cBorder = i._color;
+        
+        // Membina isi jadual Desktop
+        programHTML += `<div class="inner-card border-start border-5 border-${cBorder}"><div class="program-badge m-0 bg-${cBorder} ${cBorder==='warning'?'text-dark':'text-white'}">${i.program}</div></div>`;
+        unitHTML += `<div class="inner-card text-muted fw-medium">${i.unit}</div>`;
+        
+        const picArray = i.pic.split(',');
+        let picList = '<ul class="pic-list m-0 p-0" style="list-style-type:none;">';
+        picArray.forEach(p => { if (p.trim()) picList += `<li>- ${p.trim()}</li>`; });
+        picList += '</ul>';
+
+        picHTML += `<div class="inner-card pic-card td-pic">${picList}</div>`;
+        tamatHTML += `<div class="inner-card fw-medium">${i.tarikhTamat}</div>`;
+        tempatHTML += `<div class="inner-card"><strong>${i.tempat}</strong></div>`;
+
+        // Membina isi Kad Mobile
+        htmlMobile += `
+        <div class="mobile-program-card border-start border-5 border-${cBorder}">
+          <h5 class="fw-bold mb-3 text-dark">${i.program}</h5>
+          
+          <div class="row">
+            <div class="col-6">
+              <div class="mobile-field-label">Unit</div>
+              <div class="mobile-field-value">${i.unit}</div>
+            </div>
+            <div class="col-6">
+              <div class="mobile-field-label">Tamat</div>
+              <div class="mobile-field-value">${i.tarikhTamat}</div>
+            </div>
+            <div class="col-12">
+              <div class="mobile-field-label">PIC</div>
+              <div class="mobile-field-value">${picList}</div>
+            </div>
+            <div class="col-12">
+              <div class="mobile-field-label">Tempat</div>
+              <div class="mobile-field-value text-primary">${i.tempat}</div>
+            </div>
+          </div>
+        </div>`;
+      });
+
+      htmlDesktop += `<tr>
         <td class="shadow-sm bg-white rounded-3 m-2 d-table-cell align-middle text-center border-start border-5 border-${colorClass}" style="width: 130px;">
           <div class="fs-4 ${textColorClass} fw-bolder">${displayDay}</div>
           <div class="small text-muted fw-bold mb-1">${displayMonthYear}</div>
-          <span class="badge bg-${colorClass} ${colorClass==='warning'?'text-dark':'text-white'} shadow-sm rounded-pill" style="font-size:0.65rem; letter-spacing:0.5px; padding: 5px 8px;">${label}</span>
+          <span class="badge bg-${colorClass} ${colorClass==='warning'?'text-dark':'text-white'} shadow-sm rounded-pill" style="font-size:0.65rem; padding: 5px 8px;">${label}</span>
         </td>
         <td>${programHTML}</td>
         <td>${unitHTML}</td>
@@ -433,13 +618,133 @@
       </tr>`;
     });
     
-    if(!html) {
-        html = `<tr><td colspan="6" class="py-5 text-muted text-center fw-medium">
-            <svg width="40" height="40" class="mb-3 text-secondary opacity-50" fill="currentColor" viewBox="0 0 16 16"><path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/><path d="M4 4h8v2H4V4zm0 3h8v2H4V7zm0 3h8v2H4v-2z"/></svg>
-            <br>Tiada program dijumpai untuk pilihan masa ini.
-        </td></tr>`;
+    tbody.innerHTML = htmlDesktop;
+    mobileContainer.innerHTML = htmlMobile;
+  }
+
+  let modalKataLaluan, modalTambah, modalMesej;
+
+  document.addEventListener('DOMContentLoaded', () => {
+    modalKataLaluan = new bootstrap.Modal(document.getElementById('modalKataLaluan'));
+    modalTambah = new bootstrap.Modal(document.getElementById('modalTambahProgram'));
+    modalMesej = new bootstrap.Modal(document.getElementById('modalMesej'));
+    
+    // Auto-focus apabila modal password dibuka
+    document.getElementById('modalKataLaluan').addEventListener('shown.bs.modal', function () {
+        document.getElementById('inputKataLaluan').focus();
+    });
+  });
+
+  function bukaModalKataLaluan() {
+    document.getElementById('inputKataLaluan').value = '';
+    document.getElementById('ralatKataLaluan').classList.add('d-none');
+    modalKataLaluan.show();
+  }
+
+  function semakKataLaluan() {
+    const input = document.getElementById('inputKataLaluan').value;
+    if (input === 'y044') {
+      modalKataLaluan.hide();
+      setTimeout(() => { modalTambah.show(); }, 300); // Tunggu modal tutup dahulu
+    } else {
+      document.getElementById('ralatKataLaluan').classList.remove('d-none');
     }
-    tbody.innerHTML = html;
+  }
+
+  function janaCheckboxesPIC() {
+    const container = document.getElementById('containerCheckboxesPIC');
+    let html = '';
+    senaraiTetapPIC.forEach((pic, index) => {
+      const displayPic = pic.toLowerCase().replace(/\b\w/g, s => s.toUpperCase());
+      html += `
+        <div class="form-check mb-2">
+          <input class="form-check-input input-pic-checkbox" type="checkbox" value="${pic}" id="picCheck${index}">
+          <label class="form-check-label fw-medium" for="picCheck${index}">
+            ${displayPic}
+          </label>
+        </div>
+      `;
+    });
+    container.innerHTML = html;
+  }
+
+  function paparMesej(berjaya, teks) {
+    const ikon = document.getElementById('ikonMesej');
+    const teksMesej = document.getElementById('teksMesej');
+    
+    if (berjaya) {
+      ikon.innerHTML = `<svg width="48" height="48" class="text-success" fill="currentColor" viewBox="0 0 16 16"><path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/></svg>`;
+      teksMesej.className = "fw-bold mb-4 text-success";
+    } else {
+      ikon.innerHTML = `<svg width="48" height="48" class="text-danger" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/></svg>`;
+      teksMesej.className = "fw-bold mb-4 text-danger";
+    }
+    
+    teksMesej.innerText = teks;
+    modalMesej.show();
+  }
+
+  async function hantarDataKeSupabase(event) {
+    event.preventDefault();
+    
+    // Kumpul data dari borang
+    const program = document.getElementById('formProgram').value;
+    const mula = document.getElementById('formMula').value;
+    const tamat = document.getElementById('formTamat').value;
+    const unit = document.getElementById('formUnit').value;
+    const tempat = document.getElementById('formTempat').value;
+    
+    // Kumpul checkbox PIC yang ditanda
+    const picCheckboxes = document.querySelectorAll('.input-pic-checkbox:checked');
+    let picArray = [];
+    picCheckboxes.forEach(cb => picArray.push(cb.value));
+    
+    if (picArray.length === 0) {
+      paparMesej(false, "Sila pilih sekurang-kurangnya satu PIC.");
+      return;
+    }
+    
+    const picGabungan = picArray.join(', ');
+    
+    // Tukar butang ke mod 'Loading'
+    const btnSimpan = document.getElementById('btnSimpanProgram');
+    const asalTeks = btnSimpan.innerHTML;
+    btnSimpan.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...`;
+    btnSimpan.disabled = true;
+
+    try {
+      if (!supabaseClient) throw new Error("Pangkalan data tidak bersedia.");
+
+      const { data, error } = await supabaseClient
+        .from('takwim_spbm')
+        .insert([
+          { 
+            program: program, 
+            tarikh_mula: mula, 
+            tarikh_tamat: tamat, 
+            unit: unit, 
+            pic: picGabungan, 
+            tempat: tempat 
+          }
+        ]);
+
+      if (error) throw new Error(error.message);
+
+      modalTambah.hide();
+      document.getElementById('formTambahProgram').reset(); // Kosongkan borang
+      
+      paparMesej(true, "Rekod program berjaya ditambah!");
+      
+      // Muat semula data untuk kemas kini jadual
+      initApp(); 
+
+    } catch (error) {
+      console.error(error);
+      paparMesej(false, `Gagal menyimpan data: ${error.message}`);
+    } finally {
+      btnSimpan.innerHTML = asalTeks;
+      btnSimpan.disabled = false;
+    }
   }
 </script>
 </body>
