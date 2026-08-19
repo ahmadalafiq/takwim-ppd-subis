@@ -8,8 +8,10 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   
-  <!-- Supabase JS Client & Bootstrap Bundle -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Firebase SDK (Compat) & Bootstrap Bundle -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
   <style>
@@ -91,14 +93,15 @@
   <div class="brand-header text-center">
     <h2 class="fw-bold m-0 text-uppercase tracking-wide">Takwim SPBM 2026</h2>
     <span class="opacity-75 d-block mt-1 fw-medium letter-spacing-1">PEJABAT PENDIDIKAN DAERAH SUBIS</span>
-    <button onclick="bukaModalKataLaluan()" class="btn-add d-none d-md-inline-flex">
+    <div id="authStatus" class="small mt-2 opacity-75"></div>
+    <button onclick="mulakanTambahProgram()" class="btn-add d-none d-md-inline-flex">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
       TAMBAH PROGRAM BARU
     </button>
   </div>
 
   <!-- FAB Untuk Mobile -->
-  <div class="fab-mobile d-md-none" onclick="bukaModalKataLaluan()">
+  <div class="fab-mobile d-md-none" onclick="mulakanTambahProgram()">
     <svg width="28" height="28" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z"/></svg>
   </div>
 
@@ -206,25 +209,6 @@
   </div>
 </div>
 
-<div class="modal fade" id="modalKataLaluan" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-sm">
-    <div class="modal-content border-0 shadow">
-      <div class="modal-header bg-danger text-white border-0">
-        <h5 class="modal-title fs-6 fw-bold">Pengesahan PPD</h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-      </div>
-      <div class="modal-body p-4">
-        <label class="form-label text-muted small fw-bold">Masukkan Kata Laluan:</label>
-        <input type="password" id="inputKataLaluan" class="form-control form-control-lg bg-light" placeholder="••••">
-        <div id="ralatKataLaluan" class="text-danger small mt-2 d-none fw-bold">Katalaluan tidak tepat!</div>
-      </div>
-      <div class="modal-footer border-0">
-        <button type="button" class="btn btn-danger w-100 fw-bold rounded-pill" onclick="semakKataLaluan()">Sahkan</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <div class="modal fade" id="modalTambahProgram" tabindex="-1" data-bs-backdrop="static" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content border-0 shadow-lg">
@@ -233,7 +217,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body p-4 bg-light">
-        <form id="formTambahProgram" onsubmit="hantarDataKeSupabase(event)">
+        <form id="formTambahProgram" onsubmit="hantarDataKeFirebase(event)">
           <div class="row g-3">
             <div class="col-md-12">
               <label class="form-label fw-bold small text-muted">Nama Program <span class="text-danger">*</span></label>
@@ -297,7 +281,16 @@
 
 <script>
   let allData = [];
-  let supabaseClient = null;
+  let firebaseDB = null;
+  let currentUser = null;
+  const DOMAIN_DIBENARKAN = "@moe-dl.edu.my";
+  const PREFIX_WAJIB = "ppd-y044";
+
+  function emelDibenarkan(email) {
+    if (!email) return false;
+    const e = email.toLowerCase();
+    return e.endsWith(DOMAIN_DIBENARKAN) && e.startsWith(PREFIX_WAJIB);
+  }
 
   const senaraiTetapPIC = [
     "ABANG IZZAT BIN ABANG ABDUL RAHMAN",
@@ -312,34 +305,46 @@
     const loader = document.getElementById('loader');
     
     loader.style.display = 'block';
-    statLabel.innerText = "Memulakan sambungan ke Supabase...";
+    statLabel.innerText = "Memulakan sambungan ke Firebase...";
 
     try {
-      if (!window.supabase) {
-        throw new Error("Sistem CDN Supabase tidak dapat dimuatkan. Sila periksa capaian internet anda.");
+      if (!window.firebase) {
+        throw new Error("Sistem CDN Firebase tidak dapat dimuatkan. Sila periksa capaian internet anda.");
       }
 
-      const SUPABASE_URL = 'https://nkzzyshzrhcshpczrjya.supabase.co'; 
-      const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5renp5c2h6cmhjc2hwY3pyanlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQwNzA5NjcsImV4cCI6MjA5OTY0Njk2N30.XAJpALZJp6JbbKtqGR7AHkPIZVX6rU5SwPeZ1gJjzQA';
-      
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      const firebaseConfig = {
+        apiKey: "AIzaSyCvs8PD_8Y-JKt2CK_Oxeixy7HuduSpeTQ",
+        authDomain: "takwimspbm.firebaseapp.com",
+        databaseURL: "https://takwimspbm-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "takwimspbm",
+        storageBucket: "takwimspbm.firebasestorage.app",
+        messagingSenderId: "340054026563",
+        appId: "1:340054026563:web:b82ad2429ee748ba37e7f6"
+      };
+
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
+      }
+      firebaseDB = firebase.database();
+      initAuth();
 
       statLabel.innerText = "Menarik maklumat program...";
-      const { data, error } = await supabaseClient.from('takwim_spbm').select('*');
+      const snapshot = await firebaseDB.ref('takwim_spbm').once('value');
+      const snapshotVal = snapshot.val();
 
-      if (error) {
-        throw new Error(error.message);
+      let rawData = [];
+      if (snapshotVal) {
+        rawData = Object.keys(snapshotVal).map(key => ({ ...snapshotVal[key], _key: key }));
       }
-      
-      let rawData = data && data.length > 0 ? data : [];
+
       processIncomingData(rawData);
       janaCheckboxesPIC(); // Siapkan borang PIC
 
     } catch (error) {
       console.error(error);
       statLabel.innerHTML = `<span class="text-danger fw-bold">RALAT: ${error.message}</span>`;
-      document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase.</td></tr>`;
-      document.getElementById('mobileCardContainer').innerHTML = `<div class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Supabase.</div>`;
+      document.getElementById('tableBody').innerHTML = `<tr><td colspan="6" class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Firebase.</td></tr>`;
+      document.getElementById('mobileCardContainer').innerHTML = `<div class="text-center py-5 text-danger fw-bold">Gagal berhubung dengan Firebase.</div>`;
     } finally {
       loader.style.display = 'none';
     }
@@ -622,33 +627,64 @@
     mobileContainer.innerHTML = htmlMobile;
   }
 
-  let modalKataLaluan, modalTambah, modalMesej;
+  let modalTambah, modalMesej;
 
   document.addEventListener('DOMContentLoaded', () => {
-    modalKataLaluan = new bootstrap.Modal(document.getElementById('modalKataLaluan'));
     modalTambah = new bootstrap.Modal(document.getElementById('modalTambahProgram'));
     modalMesej = new bootstrap.Modal(document.getElementById('modalMesej'));
-    
-    // Auto-focus apabila modal password dibuka
-    document.getElementById('modalKataLaluan').addEventListener('shown.bs.modal', function () {
-        document.getElementById('inputKataLaluan').focus();
-    });
   });
 
-  function bukaModalKataLaluan() {
-    document.getElementById('inputKataLaluan').value = '';
-    document.getElementById('ralatKataLaluan').classList.add('d-none');
-    modalKataLaluan.show();
+  function initAuth() {
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        if (!emelDibenarkan(user.email)) {
+          // Emel bukan dari domain/format dibenarkan - log keluar automatik
+          firebase.auth().signOut();
+          currentUser = null;
+          paparMesej(false, `Akses ditolak. Hanya emel rasmi PPD (bermula "${PREFIX_WAJIB}" dan domain ${DOMAIN_DIBENARKAN}) dibenarkan.`);
+          kemaskiniStatusAuth();
+          return;
+        }
+        currentUser = user;
+      } else {
+        currentUser = null;
+      }
+      kemaskiniStatusAuth();
+    });
   }
 
-  function semakKataLaluan() {
-    const input = document.getElementById('inputKataLaluan').value;
-    if (input === 'y044') {
-      modalKataLaluan.hide();
-      setTimeout(() => { modalTambah.show(); }, 300); // Tunggu modal tutup dahulu
+  function kemaskiniStatusAuth() {
+    const el = document.getElementById('authStatus');
+    if (currentUser) {
+      el.innerHTML = `Log masuk sebagai <strong>${currentUser.email}</strong> &middot; <a href="#" onclick="logKeluarGoogle(event)" class="text-white text-decoration-underline">Log Keluar</a>`;
     } else {
-      document.getElementById('ralatKataLaluan').classList.remove('d-none');
+      el.innerHTML = '';
     }
+  }
+
+  async function mulakanTambahProgram() {
+    if (currentUser) {
+      modalTambah.show();
+      return;
+    }
+    try {
+      const provider = new firebase.auth.GoogleAuthProvider();
+      provider.setCustomParameters({ hd: 'moe-dl.edu.my' }); // Cadangkan akaun domain moe-dl.edu.my sahaja
+      const result = await firebase.auth().signInWithPopup(provider);
+      if (result.user && emelDibenarkan(result.user.email)) {
+        modalTambah.show();
+      }
+    } catch (error) {
+      console.error(error);
+      if (error.code !== 'auth/popup-closed-by-user' && error.code !== 'auth/cancelled-popup-request') {
+        paparMesej(false, `Log masuk gagal: ${error.message}`);
+      }
+    }
+  }
+
+  function logKeluarGoogle(event) {
+    if (event) event.preventDefault();
+    firebase.auth().signOut();
   }
 
   function janaCheckboxesPIC() {
@@ -684,7 +720,7 @@
     modalMesej.show();
   }
 
-  async function hantarDataKeSupabase(event) {
+  async function hantarDataKeFirebase(event) {
     event.preventDefault();
     
     // Kumpul data dari borang
@@ -712,32 +748,20 @@
     btnSimpan.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Menyimpan...`;
     btnSimpan.disabled = true;
 
-    // Jana UUID selamat. Menggunakan crypto.randomUUID (Moden) atau fungsi Fallback untuk pelayar/sistem lama
-    const janaUUID = (typeof crypto !== 'undefined' && crypto.randomUUID) 
-      ? crypto.randomUUID() 
-      : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-          var r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
-          return v.toString(16);
-        });
-
     try {
-      if (!supabaseClient) throw new Error("Pangkalan data tidak bersedia.");
+      if (!firebaseDB) throw new Error("Pangkalan data tidak bersedia.");
 
-      const { data, error } = await supabaseClient
-        .from('takwim_spbm')
-        .insert([
-          { 
-            id: janaUUID, // Masukkan UUID yang baru dijana
-            program: program, 
-            tarikh_mula: mula, 
-            tarikh_tamat: tamat, 
-            unit: unit, 
-            pic: picGabungan, 
-            tempat: tempat 
-          }
-        ]);
+      // push() akan jana key unik secara automatik dalam Realtime Database
+      const rujukanBaru = firebaseDB.ref('takwim_spbm').push();
 
-      if (error) throw new Error(error.message);
+      await rujukanBaru.set({
+        program: program,
+        tarikh_mula: mula,
+        tarikh_tamat: tamat,
+        unit: unit,
+        pic: picGabungan,
+        tempat: tempat
+      });
 
       modalTambah.hide();
       document.getElementById('formTambahProgram').reset(); // Kosongkan borang
